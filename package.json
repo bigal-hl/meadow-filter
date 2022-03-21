@@ -1,0 +1,34 @@
+{
+  "name": "meadow-filter",
+  "version": "1.0.0",
+  "description": "Filter utilities for Meadow Endpoints.",
+  "main": "source/Meadow-Filter.js",
+  "scripts": {
+    "coverage": "nyc npm run test && nyc report --reporter=lcov",
+    "test": "./node_modules/.bin/mocha --exit -u tdd -R spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevenvelozo/meadow-filter.git"
+  },
+  "keywords": [
+    "crud",
+    "api"
+  ],
+  "author": "Steven Velozo <steven@velozo.com> (http://velozo.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/stevenvelozo/meadow-filter/issues"
+  },
+  "homepage": "https://github.com/stevenvelozo/meadow-filter",
+  "devDependencies": {
+    "chai": "^4.3.6",
+    "codeclimate-test-reporter": "0.5.0",
+    "coveralls": "3.0.2",
+    "fable": "^2.0.1",
+    "mocha": "^9.2.2",
+    "nyc": "^15.1.0",
+    "sinon": "^13.0.1",
+    "supertest": "3.1.0"
+  }
+}
