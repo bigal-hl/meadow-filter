@@ -37,6 +37,8 @@
  FSF - Filter Sort Field
        FSF~Category~ASC~0
        FSF~Category~DESC~0
+ FDST - Filter by Distinct (adds distinct keyword to Read and Count queries)
+       FDST~0~0~0~
 
  This means: FBV~Category~EQ~Books~FBV~PublishedYear~GT~2000~FSF~PublishedYear~DESC~0
              Filters down to ALL BOOKS PUBLUSHED AFTER 2000 IN DESCENDING ORDER
@@ -139,6 +141,13 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 			pQuery.addFilter('', '', ')');
 			break;
 
+		case 'FDST':   // Filter Distinct
+			// ensure we don't break if using an older foxhound version
+			if (pQuery.setDistinct)
+			{
+				pQuery.setDistinct(true);
+			}
+			break;
 
 		default:
 			//console.log('Unparsable filter stanza.');

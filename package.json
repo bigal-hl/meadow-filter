@@ -1,6 +1,6 @@
 {
   "name": "meadow-filter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Filter utilities for Meadow Endpoints.",
   "main": "source/Meadow-Filter.js",
   "scripts": {
