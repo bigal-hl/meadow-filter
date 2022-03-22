@@ -6,7 +6,7 @@ const assert = chai.assert;
 suite('Filter Stanza Parse', () =>
 {
     const parse = require('../source/Meadow-Filter').parse;
-    let queryStub = { addFilter: () => { } };
+    let queryStub = { addFilter: () => { }, setDistinct: () => { } };
     let queryMock;
 
     setup(() =>
@@ -14,6 +14,7 @@ suite('Filter Stanza Parse', () =>
         queryMock = sinon.mock(queryStub);
     });
 
+    //TODO: add more test cases...
     test('Filter by Value - EQ', () =>
     {
         // given
@@ -49,6 +50,19 @@ suite('Filter Stanza Parse', () =>
         queryMock.expects('addFilter').once().withArgs('Limit', '5', '>', 'AND');
         queryMock.expects('addFilter').once().withArgs('Limit', '0', '<', 'OR');
         queryMock.expects('addFilter').once().withArgs('', '', ')');
+
+        // when
+        parse(filterString, queryStub);
+
+        // then
+        queryMock.verify();
+    });
+
+    test('Filter distinct', () =>
+    {
+        // given
+        const filterString = 'FDST~0~0~0';
+        queryMock.expects('setDistinct').once().withArgs(true);
 
         // when
         parse(filterString, queryStub);
