@@ -83,6 +83,9 @@ const getFilterComparisonOperator = (pFilterOperator) =>
 		case 'INN':
 			tmpOperator = 'IN';
 			break;
+		case 'NIN':
+			tmpOperator = 'NOT IN';
+			break;
 		case 'FOP':
 			tmpOperator = '(';
 			break;

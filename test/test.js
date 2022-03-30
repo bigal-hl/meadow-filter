@@ -41,6 +41,19 @@ suite('Filter Stanza Parse', () =>
         queryMock.verify();
     });
 
+    test('Filter by List - NIN', () =>
+    {
+        // given
+        const filterString = 'FBL~IDWaffle~NIN~1,23,456';
+        queryMock.expects('addFilter').once().withArgs('IDWaffle', [ '1', '23', '456' ], 'NOT IN', 'AND');
+
+        // when
+        parse(filterString, queryStub);
+
+        // then
+        queryMock.verify();
+    });
+
     test('Compound Filter', () =>
     {
         // given
