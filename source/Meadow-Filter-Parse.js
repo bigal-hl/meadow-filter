@@ -29,6 +29,7 @@
        * IN - Is NULL
        * NN - Is NOT NULL
        * INN - IN list
+       * NIN - NOT IN list
  FBVOR - Filter By Value (left-side OR connected)
  FBL - Filter By List (value list, separated by commas)
        FBL~Category~EQ~Books,Movies
