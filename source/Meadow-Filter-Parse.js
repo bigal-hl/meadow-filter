@@ -121,7 +121,7 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 
 		case 'FBLOR': // Filter by List (left-side OR)
 			// Just split the value by comma for now.  May want to revisit better characters or techniques later.
-			pQuery.addFilter(pFilterStanza.Field, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator, 'OR'));
+			pQuery.addFilter(pFilterStanza.Field, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'OR');
 			break;
 
 		case 'FBD': // Filter by Date (exclude time)
