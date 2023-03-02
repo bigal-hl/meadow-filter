@@ -14,6 +14,8 @@
        INSTRUCTION~FIELD~OPERATOR~VALUE
  FOP - Filter Open Paren
        FOP~0~(~0
+ FOPOR - Filter Open Paren (left-side OR connected)
+       FOPOR~0~(~0
  FCP - Filter Close Paren
        FCP~0~)~0
  FBV - Filter By Value (left-side AND connected)
@@ -88,6 +90,7 @@ const getFilterComparisonOperator = (pFilterOperator) =>
 			tmpOperator = 'NOT IN';
 			break;
 		case 'FOP':
+		case 'FOPOR':
 			tmpOperator = '(';
 			break;
 		case 'FCP':
@@ -124,7 +127,7 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 			pQuery.addFilter(pFilterStanza.Field, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'OR');
 			break;
 
-		case 'FBD': // Filter by Date (exclude time)
+		case 'FBD':   // Filter by Date (exclude time)
 			pQuery.addFilter(`DATE(${pFilterStanza.Field})`, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'AND', pFilterStanza.Field);
 			break;
 
@@ -137,15 +140,19 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 			pQuery.addSort({ Column: pFilterStanza.Field, Direction: tmpSortDirection });
 			break;
 
-		case 'FOP':   // Filter Open Paren
+		case 'FOP':   // Filter Open Paren  (left-side AND)
 			pQuery.addFilter('', '', '(');
+			break;
+
+		case 'FOPOR': // Filter Open Paren  (left-side OR)
+			pQuery.addFilter('', '', '(', 'OR');
 			break;
 
 		case 'FCP':   // Filter Close Paren
 			pQuery.addFilter('', '', ')');
 			break;
 
-		case 'FDST':   // Filter Distinct
+		case 'FDST':  // Filter Distinct
 			// ensure we don't break if using an older foxhound version
 			if (pQuery.setDistinct)
 			{
@@ -156,7 +163,6 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 		default:
 			//console.log('Unparsable filter stanza.');
 			return false;
-			break;
 	}
 
 	// Be paranoid about the instruction
