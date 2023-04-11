@@ -160,6 +160,21 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 			}
 			break;
 
+    case 'FBJV': // Filter by JSON Value (left-side AND)
+      pQuery.addFilter(
+        `"${pFilterStanza.Field}"`,
+        pFilterStanza.Value,
+        getFilterComparisonOperator(pFilterStanza.Operator),
+        'AND',
+        'jsonFieldKey'
+      );
+      break;
+
+    case 'FSJF': // Filter Sort Field
+      const tmpSortDirection = pFilterStanza.Operator === 'DESC' ? 'Descending' : 'Ascending';
+      pQuery.addSort({ Column: `"${pFilterStanza.Field}"`, Direction: tmpSortDirection });
+      break;
+
 		default:
 			//console.log('Unparsable filter stanza.');
 			return false;
