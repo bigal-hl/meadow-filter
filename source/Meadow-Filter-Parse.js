@@ -160,20 +160,32 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 			}
 			break;
 
-    case 'FBJV': // Filter by JSON Value (left-side AND)
-      pQuery.addFilter(
-        `"${pFilterStanza.Field}"`,
-        pFilterStanza.Value,
-        getFilterComparisonOperator(pFilterStanza.Operator),
-        'AND',
-        'jsonFieldKey'
-      );
+    case 'FBJV':// Filter by JSON Value (left-side AND)
+      {
+      const jsonField = pFilterStanza.Field.split(',')[0];
+      const subFields = pFilterStanza.Field.split(',')[1];
+      pQuery
+        .addFilter('', '1', `LENGTH(${jsonField}) >`)
+        .addFilter(
+          `JSON_EXTRACT(${jsonField}, '$.${subFields}')`,
+          pFilterStanza.Value,
+          getFilterComparisonOperator(pFilterStanza.Operator),
+          'AND',
+          'jsonFieldParameter'
+        );
       break;
+      }
 
-    case 'FSJF': // Filter Sort Field
+    case 'FSJF':// Filter Sort Field
+      {
       const tmpSortDirection = pFilterStanza.Operator === 'DESC' ? 'Descending' : 'Ascending';
-      pQuery.addSort({ Column: `"${pFilterStanza.Field}"`, Direction: tmpSortDirection });
+      const jsonField = pFilterStanza.Field.split(',')[0];
+      const subFields = pFilterStanza.Field.split(',')[1];
+      pQuery
+        .addFilter('', '1', `LENGTH(${jsonField})>`)
+        .setSort([{ Column: `${jsonField}->'$.${subFields}'`, Direction: tmpSortDirection }]);
       break;
+      }
 
 		default:
 			//console.log('Unparsable filter stanza.');
