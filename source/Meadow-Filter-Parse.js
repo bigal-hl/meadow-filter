@@ -165,7 +165,7 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
       const jsonField = pFilterStanza.Field.split(',')[0];
       const subFields = pFilterStanza.Field.split(',')[1];
       pQuery
-        .addFilter('', '1', `LENGTH(${jsonField}) >`)
+        .addFilter('', '1', `LENGTH(${jsonField}) >`, 'AND', 'jsonFieldLen')
         .addFilter(
           `JSON_EXTRACT(${jsonField}, '$.${subFields}')`,
           pFilterStanza.Value,
@@ -182,7 +182,7 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
       const jsonField = pFilterStanza.Field.split(',')[0];
       const subFields = pFilterStanza.Field.split(',')[1];
       pQuery
-        .addFilter('', '1', `LENGTH(${jsonField})>`)
+        .addFilter('', '1', `LENGTH(${jsonField}) >`, 'AND', 'jsonFieldLen')
         .setSort([{ Column: `${jsonField}->'$.${subFields}'`, Direction: tmpSortDirection }]);
       break;
       }
