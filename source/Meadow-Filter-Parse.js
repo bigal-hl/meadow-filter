@@ -165,6 +165,8 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
       const fields = pFilterStanza.Field.split(',', 2);
       const jsonField =fields[0];
       const subFields = fields[1];
+      if (jsonField !== undefined && jsonField.trim() !== "" && subFields !== undefined && subFields.trim() !== "")
+        {
       pQuery
         .addFilter('', '1', `LENGTH(${jsonField}) >`, 'AND', 'jsonFieldLen')
         .addFilter(
@@ -174,6 +176,10 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
           'AND',
           'jsonFieldParameter'
         );
+      }
+      else{
+          throw new Error("Invalid Jsonfield or path");
+      }
       break;
       }
 
@@ -183,9 +189,15 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
       const fields = pFilterStanza.Field.split(',', 2);
       const jsonField =fields[0];
       const subFields = fields[1];
+      if (jsonField !== undefined && jsonField.trim() !== "" && subFields !== undefined && subFields.trim() !== "")
+        {
       pQuery
         .addFilter('', '1', `LENGTH(${jsonField}) >`, 'AND', 'jsonFieldLen')
         .setSort([{ Column: `${jsonField}->'$.${subFields}'`, Direction: tmpSortDirection }]);
+      }
+      else{
+          throw new Error("Invalid Jsonfield or path");
+      }
       break;
       }
 
