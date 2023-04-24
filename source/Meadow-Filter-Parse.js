@@ -162,8 +162,9 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 
     case 'FBJV':// Filter by JSON Value (left-side AND)
       {
-      const jsonField = pFilterStanza.Field.split(',')[0];
-      const subFields = pFilterStanza.Field.split(',')[1];
+      const fields = pFilterStanza.Field.split(',', 2);
+      const jsonField =fields[0];
+      const subFields = fields[1];
       pQuery
         .addFilter('', '1', `LENGTH(${jsonField}) >`, 'AND', 'jsonFieldLen')
         .addFilter(
@@ -179,8 +180,9 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
     case 'FSJF':// Filter Sort Field
       {
       const tmpSortDirection = pFilterStanza.Operator === 'DESC' ? 'Descending' : 'Ascending';
-      const jsonField = pFilterStanza.Field.split(',')[0];
-      const subFields = pFilterStanza.Field.split(',')[1];
+      const fields = pFilterStanza.Field.split(',', 2);
+      const jsonField =fields[0];
+      const subFields = fields[1];
       pQuery
         .addFilter('', '1', `LENGTH(${jsonField}) >`, 'AND', 'jsonFieldLen')
         .setSort([{ Column: `${jsonField}->'$.${subFields}'`, Direction: tmpSortDirection }]);
