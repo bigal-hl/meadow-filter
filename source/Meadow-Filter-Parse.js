@@ -45,6 +45,36 @@
 
  This means: FBV~Category~EQ~Books~FBV~PublishedYear~GT~2000~FSF~PublishedYear~DESC~0
              Filters down to ALL BOOKS PUBLUSHED AFTER 2000 IN DESCENDING ORDER
+
+ Similar queries are supported for fields that contain a JSON object The FIELD is in a dot notation.
+ Basic Anatomy of FIELD:
+        TABLECOLUMN.KEY
+		where TABLECOLUMN is the record column according to the schema
+		and KEY is a property of the JSON contained in TABLECOLUMN. `.KEY` may be repeated for nested JSON objects.
+ FBJV - Filter By JSON Value (left-side AND connected)
+       FBJV~FormData.Meta.FeatureEnabled~EQ~True
+       Possible comparisons:
+       * EQ - Equals To (=)
+       * NE - Not Equals To (!=)
+       * GT - Greater Than (>)
+       * GE - Greater Than or Equals To (>=)
+       * LT - Less Than (<)
+       * LE - Less Than or Equals To (<=)
+       * LK - Like (Like)
+       * IN - Is NULL
+       * NN - Is NOT NULL
+       * INN - IN list
+       * NIN - NOT IN list
+ FBJVOR - Filter By JSON Value (left-side OR connected)
+ FBJL - Filter By JSON List (value list, separated by commas)
+       FBJL~FormDataJSON.Tidings.Data.Type~INN~ChangeOrder,Payment Form
+ FBJLOR - Filter By JSON List (value list, separated by commas, left-side OR connected)
+       FBJLOR~FormDataJSON.Tidings.Data.Type~INN~ChangeOrder,Payment Form
+ FBJD - Filter by JSON Date (exclude time)
+       FBJD~FormDataJSON.UpdateDate~EQ~2015-10-01
+ FSJF - Filter Sort JSON Field
+       FSJF~FormDataJSON.Category~ASC~0
+       FSJF~FormDataJSON.Category~DESC~0
 */
 
 // Get the comparison operator for use in a query stanza
@@ -100,6 +130,50 @@ const getFilterComparisonOperator = (pFilterOperator) =>
 	return tmpOperator;
 };
 
+/**
+ * @spec fieldColumn is the target database (table) column; jsonPath is the target path to use for JSON_EXTRACT
+ * @param {object} pFilterStanza - a filter stanza with the properties defined in the interface
+ * @returns {object} structure { fieldColumn, jsonPath }
+ */
+const parseJSONFieldAndPath = (pFilterStanza) =>
+{
+	const splitIndex = pFilterStanza.Field.indexOf('.');
+	if (splitIndex < 1)
+	{
+		const msg = `Invalid format for Field[${pFilterStanza.Field}]`;
+		throw new Error(msg);
+	}
+	const fieldColumn = pFilterStanza.Field.substring(0, splitIndex);
+	const jsonPath = pFilterStanza.Field.substring(splitIndex);
+	const result =
+	{
+		fieldColumn,
+		jsonPath
+	};
+	return result;
+};
+
+/**
+ * @spec generates the appropriate filter(s) for looking inside a JSON field
+ * @param {string} fieldColumn - the target column for the meadow entity
+ * @param {string} jsonPath - the target chain (. notation) of possibly nested json keys in the value of 'fieldColumn'
+ * @param {number|string|Array|object} value - the value to use in the filter for comparison
+ * @param {string} comparisonOperator - the comparison operator (e.g. =, <=, NOT IN)
+ * @param {string} connector - the logical connector to this query (AND/OR)
+ * @param {object} pQuery - the foxhound query object
+ * @return {object} pQuery
+ */
+const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, connector, pQuery) =>
+{
+	pQuery.addFilter('', '', '(');
+	pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND');
+	// TODO: is it safe and desired to always unquote? May need to handle comparisons between 1 (number) and '1' (string from 'value')
+	pQuery.addFilter(`JSON_UNQUOTE(JSON_EXTRACT(${fieldColumn}, '$${jsonPath}'))`, value, comparisonOperator, connector);
+	pQuery.addFilter('', '', ')');
+	// to follow foxhound query builder chaining
+	return pQuery;
+};
+
 const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 {
 	if (!pFilterStanza.Instruction)
@@ -139,6 +213,59 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 			const tmpSortDirection = (pFilterStanza.Operator === 'DESC') ? 'Descending' : 'Ascending';
 			pQuery.addSort({ Column: pFilterStanza.Field, Direction: tmpSortDirection });
 			break;
+
+		case 'FBJV':   // Filter by JSON Value (left-side AND)
+		{
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			addFilterJSONToQuery(fieldColumn, jsonPath, pFilterStanza.Value, getFilterComparisonOperator(pFilterStanza.Operator), 'AND', pQuery);
+			break;
+		}
+
+		case 'FBJVOR': // Filter by JSON Value (left-side OR)
+		{
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			addFilterJSONToQuery(fieldColumn, jsonPath, pFilterStanza.Value, getFilterComparisonOperator(pFilterStanza.Operator), 'OR', pQuery);
+			break;
+		}
+
+		case 'FBJL':   // Filter by JSON List (left-side AND)
+		{
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			// Just split the value by comma for now.  May want to revisit better characters or techniques later.
+			addFilterJSONToQuery(fieldColumn, jsonPath, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'AND', pQuery);
+			break;
+		}
+
+		case 'FBJLOR': // Filter by JSON List (left-side OR)
+		{
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			// Just split the value by comma for now.  May want to revisit better characters or techniques later.
+			addFilterJSONToQuery(fieldColumn, jsonPath, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'OR', pQuery);
+			break;
+		}
+
+		case 'FBJD':   // Filter by JSON Date (exclude time)
+		{
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			pQuery.addFilter('', '', '(');
+			pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND');
+			// NOTE: the date value in the json needs to be in some "year month day" (followed by time, optional) format for SQL 'DATE' to recognize it
+			// TODO: the last (5th) argument to addFilter is a 'parameter'. Is the originating table's column name good enough here?
+			// ASSUMPTION: use of .split() here is modeled after the FBD case. It always returns a list, no matter the comparison operator. We assume that retold will handle stripping the list of way where it makes sense (e.g. EG, GT)
+			pQuery.addFilter(`DATE(JSON_UNQUOTE(JSON_EXTRACT(${fieldColumn}, '$${jsonPath}')))`, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'AND', fieldColumn);
+			pQuery.addFilter('', '', ')');
+			break;
+		}
+
+		case 'FSJF':   // Filter Sort JSON Field
+		{
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			const sortDirection = (pFilterStanza.Operator === 'DESC') ? 'Descending' : 'Ascending';
+			pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND');
+			// TODO: need to cast to the expected data type, otherwise bad things happen (e.g. numbers are compared as strings)
+			pQuery.addSort({ Column: `${fieldColumn} ->> '$${jsonPath}'`, Direction: sortDirection });
+			break;
+		}
 
 		case 'FOP':   // Filter Open Paren  (left-side AND)
 			pQuery.addFilter('', '', '(');
