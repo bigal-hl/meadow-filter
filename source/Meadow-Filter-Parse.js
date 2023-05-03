@@ -74,7 +74,8 @@
        FBJD~FormDataJSON.UpdateDate~EQ~2015-10-01
  FSJF - Filter Sort JSON Field
        FSJF~FormDataJSON.Category~ASC~0
-       FSJF~FormDataJSON.Category~DESC~0
+       FSJF~FormDataJSON.Category~DESC~<cast>
+          where <cast> can be in (UINT,SINT,CHAR,DD,DATE) - defaults to CHAR
 */
 
 // Get the comparison operator for use in a query stanza
@@ -131,6 +132,35 @@ const getFilterComparisonOperator = (pFilterOperator) =>
 };
 
 /**
+ *
+ * @param {string} encodedType - "encoded" type from the filter-parse request
+ * @return {string} meadow-friendly type (e.g. SQL type that one could cast to)
+ */
+const getDataType = (encodedType) =>
+{
+	let type = 'CHAR';
+	switch (encodedType)
+	{
+		case 'SINT':
+			type = 'SIGNED';
+			break;
+		case 'UINT':
+			type = 'UNSIGNED';
+			break;
+		case 'DD':
+			// base 10, 5 decimal places (should cover 99% of use cases)
+			type = 'DECIMAL(10,5)';
+			break;
+		case 'DATE':
+			type = 'DATE';
+			break;
+		default:
+			break;
+	}
+	return type;
+};
+
+/**
  * @spec fieldColumn is the target database (table) column; jsonPath is the target path to use for JSON_EXTRACT
  * @param {object} pFilterStanza - a filter stanza with the properties defined in the interface
  * @returns {object} structure { fieldColumn, jsonPath }
@@ -166,9 +196,30 @@ const parseJSONFieldAndPath = (pFilterStanza) =>
 const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, connector, pQuery) =>
 {
 	pQuery.addFilter('', '', '(');
-	pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND');
-	// TODO: is it safe and desired to always unquote? May need to handle comparisons between 1 (number) and '1' (string from 'value')
-	pQuery.addFilter(`JSON_UNQUOTE(JSON_EXTRACT(${fieldColumn}, '$${jsonPath}'))`, value, comparisonOperator, connector);
+	// NOTE: bypassing the table name injection by not providing a column argument
+	// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
+	pQuery.addFilter('', 1, `JSON_VALID(${fieldColumn}) =`, 'AND', 'validJson');
+	let command = `JSON_EXTRACT(${fieldColumn}, '$${jsonPath}')`;
+	let finalValue = value;
+	// NOTE: strings like "1 " are a number (1)
+	if (Array.isArray(value))
+	{
+		const nanFound = value.find((v) => isNaN(Number(v)));
+		if (!nanFound)
+		{
+			command = `JSON_UNQUOTE(${command})`;
+			finalValue = value.map((v) => Number(v));
+		}
+	}
+	else if (!isNaN(Number(value)))
+	{
+		// assumption: request contained a number embedded in a string, number comparison is desired
+		// value is a number, extract it from the strings
+		command = `JSON_UNQUOTE(${command})`;
+		finalValue = Number(value);
+	}
+	// NOTE: for whatever reason, foxhound accepts the JSON_UNQUOTE/JSON_EXTRACT commands without the bypass needed for JSON_VALID
+	pQuery.addFilter(command, finalValue, comparisonOperator, connector, 'jsonExtracted');
 	pQuery.addFilter('', '', ')');
 	// to follow foxhound query builder chaining
 	return pQuery;
@@ -248,9 +299,10 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 		{
 			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
 			pQuery.addFilter('', '', '(');
-			pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND');
+			// NOTE: bypassing the table name injection by not providing a column argument
+			// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
+			pQuery.addFilter('', 1, `JSON_VALID(${fieldColumn}) =`, 'AND', 'validJson');
 			// NOTE: the date value in the json needs to be in some "year month day" (followed by time, optional) format for SQL 'DATE' to recognize it
-			// TODO: the last (5th) argument to addFilter is a 'parameter'. Is the originating table's column name good enough here?
 			// ASSUMPTION: use of .split() here is modeled after the FBD case. It always returns a list, no matter the comparison operator. We assume that retold will handle stripping the list of way where it makes sense (e.g. EG, GT)
 			pQuery.addFilter(`DATE(JSON_UNQUOTE(JSON_EXTRACT(${fieldColumn}, '$${jsonPath}')))`, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'AND', fieldColumn);
 			pQuery.addFilter('', '', ')');
@@ -261,9 +313,12 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 		{
 			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
 			const sortDirection = (pFilterStanza.Operator === 'DESC') ? 'Descending' : 'Ascending';
-			pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND');
-			// TODO: need to cast to the expected data type, otherwise bad things happen (e.g. numbers are compared as strings)
-			pQuery.addSort({ Column: `${fieldColumn} ->> '$${jsonPath}'`, Direction: sortDirection });
+			const sortingType = getDataType(pFilterStanza.Value);
+			// NOTE: bypassing the table name injection by not providing a column argument
+			// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
+			pQuery.addFilter('', 1, `JSON_VALID(${fieldColumn}) =`, 'AND', 'validJson');
+			// cast to the expected data type, otherwise bad things happen (e.g. numbers are compared as strings)
+			pQuery.addSort({ Column: `CAST(${fieldColumn} ->> '$${jsonPath}' AS ${sortingType})`, Direction: sortDirection });
 			break;
 		}
 
