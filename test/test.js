@@ -125,6 +125,18 @@ suite('Filter Stanza Parse', () =>
 
     suite('JSON filter stanzas', () =>
     {
+        test('Filter by JSON - Bad Path', () =>
+        {
+            // given bad path (no dot notation at all)
+            const filterString = 'FBJV~FormData~EQ~123';
+
+            // when parse is called
+            const parseWrapper = () => { parse(filterString, queryStub) };
+
+            // then an error is thrown
+            expect(parseWrapper).to.throw();
+        });
+
         test('Filter by JSON Value - EQ', () =>
         {
             // given
