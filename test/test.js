@@ -137,6 +137,23 @@ suite('Filter Stanza Parse', () =>
             expect(parseWrapper).to.throw();
         });
 
+        test('[Security] Filter by JSON - Malicious Path', () =>
+        {
+            // given
+            const filterString = 'FBJV~FormData.IDWaffle\')) AND Select COUNT(*) From Document AND ((\'1~EQ~123';
+            queryMock.expects('addFilter').once().withArgs('','','(');
+            queryMock.expects('addFilter').once().withArgs('', 1, 'JSON_VALID(FormData) =', 'AND');
+            //// make sure quotes are escaped to avoid command injections
+            queryMock.expects('addFilter').once().withArgs('JSON_UNQUOTE(JSON_EXTRACT(FormData, \'$.IDWaffle\\\')) AND Select COUNT(*) From Document AND ((\\\'1\'))', 123, '=', 'AND');
+            queryMock.expects('addFilter').once().withArgs('','',')');
+
+            // when
+            parse(filterString, queryStub);
+
+            // then
+            queryMock.verify();
+        });
+
         test('Filter by JSON Value - EQ', () =>
         {
             // given

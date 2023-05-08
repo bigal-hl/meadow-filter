@@ -161,6 +161,20 @@ const getDataType = (encodedType) =>
 };
 
 /**
+ * @spec prepares/formats client inputs so they can be safely added to a query string
+ * @param {Array<string>} values - a list of client inputs to a query
+ * @return {Array<string>} the formatted values
+ */
+const prepareQueryValues = (values) =>
+{
+	return values.map((v) =>
+	{
+		// escape quotes
+		return v.replaceAll("'", "\\'").replaceAll('"', '\\"');
+	});
+};
+
+/**
  * @spec fieldColumn is the target database (table) column; jsonPath is the target path to use for JSON_EXTRACT
  * @param {object} pFilterStanza - a filter stanza with the properties defined in the interface
  * @returns {object} structure { fieldColumn, jsonPath }
@@ -173,8 +187,9 @@ const parseJSONFieldAndPath = (pFilterStanza) =>
 		const msg = `Invalid format for Field[${pFilterStanza.Field}]`;
 		throw new Error(msg);
 	}
-	const fieldColumn = pFilterStanza.Field.substring(0, splitIndex);
-	const jsonPath = pFilterStanza.Field.substring(splitIndex);
+	const fieldColumnRaw = pFilterStanza.Field.substring(0, splitIndex);
+	const jsonPathRaw = pFilterStanza.Field.substring(splitIndex);
+	let [ fieldColumn, jsonPath ] = prepareQueryValues([fieldColumnRaw, jsonPathRaw]);
 	const result =
 	{
 		fieldColumn,
