@@ -214,20 +214,24 @@ const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, 
 	// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
 	pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND', 'validJson');
 	let command = `JSON_EXTRACT(${fieldColumn}, '$${jsonPath}')`;
+	// finalValue will be the value to use in the filter
 	let finalValue = value;
-	// NOTE: strings like "1 " are a number (1)
+	// determine the finalValue based on the expected data type of the input. Distinguish between string and number.
+	// NOTE: strings like "1 " are a number (1) and would be cast appropriately here
 	if (Array.isArray(value))
 	{
+		// if the value is a list (e.g. for FBJL), apply the same treatment to all entries.
 		const nanFound = value.find((v) => isNaN(Number(v)));
 		if (!nanFound)
 		{
+			// assumption: since all entries are numbers, we can set up a number comparison
 			command = `JSON_UNQUOTE(${command})`;
 			finalValue = value.map((v) => Number(v));
 		}
 	}
 	else if (!isNaN(Number(value)))
 	{
-		// assumption: request contained a number embedded in a string, number comparison is desired
+		// assumption: since request contained a number embedded in a string, number comparison is desired
 		// value is a number, extract it from the strings
 		command = `JSON_UNQUOTE(${command})`;
 		finalValue = Number(value);
