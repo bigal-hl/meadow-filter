@@ -274,7 +274,7 @@ suite('Filter Stanza Parse', () =>
         [
             { requestedType: 'UINT', expectedType: 'UNSIGNED'},
             { requestedType: 'SINT', expectedType: 'SIGNED'},
-            { requestedType: 'DD', expectedType: 'DECIMAL(10,5)'},
+            { requestedType: 'DD', expectedType: 'DECIMAL(40,5)'},
             { requestedType: 'DATE', expectedType: 'DATE'},
         ];
         fsjfByNumberTests.forEach((input) =>
