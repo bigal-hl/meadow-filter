@@ -213,7 +213,7 @@ const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, 
 	pQuery.addFilter('', '', '(');
 	// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
 	pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND', 'validJson');
-	let command = `JSON_EXTRACT(${fieldColumn}, '$${jsonPath}')`;
+	let command = `JSON_UNQUOTE(JSON_EXTRACT(${fieldColumn}, '$${jsonPath}'))`;
 	// finalValue will be the value to use in the filter
 	let finalValue = value;
 	// determine the finalValue based on the expected data type of the input. Distinguish between string and number.
@@ -225,7 +225,6 @@ const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, 
 		if (!nanFound)
 		{
 			// assumption: since all entries are numbers, we can set up a number comparison
-			command = `JSON_UNQUOTE(${command})`;
 			finalValue = value.map((v) => Number(v));
 		}
 	}
@@ -233,7 +232,6 @@ const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, 
 	{
 		// assumption: since request contained a number embedded in a string, number comparison is desired
 		// value is a number, extract it from the strings
-		command = `JSON_UNQUOTE(${command})`;
 		finalValue = Number(value);
 	}
 	pQuery.addFilter(command, finalValue, comparisonOperator, connector, 'jsonExtracted');
