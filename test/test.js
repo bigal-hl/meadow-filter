@@ -174,9 +174,9 @@ suite('Filter Stanza Parse', () =>
         {
             // given
             const filterString = 'FBJVOR~FormData.IDWaffle~GT~123';
-            queryMock.expects('addFilter').once().withArgs('','','(');
+            queryMock.expects('addFilter').once().withArgs('','','(', 'OR');
             queryMock.expects('addFilter').once().withArgs('JSON_VALID(FormData)', 1, '=', 'AND');
-            queryMock.expects('addFilter').once().withArgs('CAST(JSON_UNQUOTE(JSON_EXTRACT(FormData, \'$.IDWaffle\')) AS CHAR)', 123, '>', 'OR');
+            queryMock.expects('addFilter').once().withArgs('CAST(JSON_UNQUOTE(JSON_EXTRACT(FormData, \'$.IDWaffle\')) AS CHAR)', 123, '>', 'AND');
             queryMock.expects('addFilter').once().withArgs('','',')');
 
             // when
@@ -227,9 +227,9 @@ suite('Filter Stanza Parse', () =>
             queryMock.expects('addFilter').once().withArgs('Limit', '0', '<', 'OR');
             queryMock.expects('addFilter').once().withArgs('', '', ')');
             //// calls around json fields
-            queryMock.expects('addFilter').once().withArgs('', '', '(');
+            queryMock.expects('addFilter').once().withArgs('', '', '(', 'OR');
             queryMock.expects('addFilter').once().withArgs('JSON_VALID(SomeField)', 1, '=', 'AND');
-            queryMock.expects('addFilter').once().withArgs('CAST(JSON_UNQUOTE(JSON_EXTRACT(SomeField, \'$.IDWaffle\')) AS CHAR)', [ 1, 23 ,456 ], 'IN', 'OR');
+            queryMock.expects('addFilter').once().withArgs('CAST(JSON_UNQUOTE(JSON_EXTRACT(SomeField, \'$.IDWaffle\')) AS CHAR)', [ 1, 23 ,456 ], 'IN', 'AND');
             queryMock.expects('addFilter').once().withArgs('', '', ')');
 
             // when
