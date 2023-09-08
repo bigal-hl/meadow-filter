@@ -210,7 +210,8 @@ const parseJSONFieldAndPath = (pFilterStanza) =>
  */
 const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, connector, pQuery) =>
 {
-	pQuery.addFilter('', '', '(');
+	// honor the connector by placing it before the complex clause
+	pQuery.addFilter('', '', '(', connector);
 	// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
 	pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND', 'validJson');
 	let command = `CAST(JSON_UNQUOTE(JSON_EXTRACT(${fieldColumn}, '$${jsonPath}')) AS CHAR)`;
@@ -234,7 +235,7 @@ const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, 
 		// value is a number, extract it from the strings
 		finalValue = Number(value);
 	}
-	pQuery.addFilter(command, finalValue, comparisonOperator, connector, 'jsonExtracted');
+	pQuery.addFilter(command, finalValue, comparisonOperator, 'AND', 'jsonExtracted');
 	pQuery.addFilter('', '', ')');
 	// to follow foxhound query builder chaining
 	return pQuery;
