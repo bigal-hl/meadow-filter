@@ -213,7 +213,7 @@ const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, 
 	pQuery.addFilter('', '', '(');
 	// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
 	pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND', 'validJson');
-	let command = `JSON_UNQUOTE(JSON_EXTRACT(${fieldColumn}, '$${jsonPath}'))`;
+	let command = `CAST(JSON_UNQUOTE(JSON_EXTRACT(${fieldColumn}, '$${jsonPath}')) AS CHAR)`;
 	// finalValue will be the value to use in the filter
 	let finalValue = value;
 	// determine the finalValue based on the expected data type of the input. Distinguish between string and number.
