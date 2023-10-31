@@ -177,17 +177,30 @@ const prepareQueryValues = (values) =>
 /**
  * @spec fieldColumn is the target database (table) column; jsonPath is the target path to use for JSON_EXTRACT
  * @param {object} pFilterStanza - a filter stanza with the properties defined in the interface
+ * @param {Array<object>} pJoins - a set of joins for the current query
  * @returns {object} structure { fieldColumn, jsonPath }
  */
-const parseJSONFieldAndPath = (pFilterStanza) =>
+const parseJSONFieldAndPath = (pFilterStanza, pJoins) =>
 {
-	const splitIndex = pFilterStanza.Field.indexOf('.');
+	let startIx = 0;
+	if(Array.isArray(pJoins))
+	{
+		let matchingJoin = pJoins.find(join => pFilterStanza.Field.startsWith(`${join.Table}.`));
+		if(matchingJoin)
+		{
+			// start the search after this table name, the field is fully qualified
+			startIx = matchingJoin.Table.length + 1
+		}
+	}
+
+	const splitIndex = pFilterStanza.Field.indexOf('.', startIx);
 	if (splitIndex < 1)
 	{
 		const msg = `Invalid format for Field[${pFilterStanza.Field}]`;
 		throw new Error(msg);
 	}
 	const fieldColumnRaw = pFilterStanza.Field.substring(0, splitIndex);
+
 	const jsonPathRaw = pFilterStanza.Field.substring(splitIndex);
 	let [ fieldColumn, jsonPath ] = prepareQueryValues([fieldColumnRaw, jsonPathRaw]);
 	const result =
@@ -283,21 +296,21 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 
 		case 'FBJV':   // Filter by JSON Value (left-side AND)
 		{
-			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza, pQuery.parameters?.join);
 			addFilterJSONToQuery(fieldColumn, jsonPath, pFilterStanza.Value, getFilterComparisonOperator(pFilterStanza.Operator), 'AND', pQuery);
 			break;
 		}
 
 		case 'FBJVOR': // Filter by JSON Value (left-side OR)
 		{
-			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza, pQuery.parameters?.join);
 			addFilterJSONToQuery(fieldColumn, jsonPath, pFilterStanza.Value, getFilterComparisonOperator(pFilterStanza.Operator), 'OR', pQuery);
 			break;
 		}
 
 		case 'FBJL':   // Filter by JSON List (left-side AND)
 		{
-			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza, pQuery.parameters?.join);
 			// Just split the value by comma for now.  May want to revisit better characters or techniques later.
 			addFilterJSONToQuery(fieldColumn, jsonPath, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'AND', pQuery);
 			break;
@@ -305,7 +318,7 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 
 		case 'FBJLOR': // Filter by JSON List (left-side OR)
 		{
-			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza, pQuery.parameters?.join);
 			// Just split the value by comma for now.  May want to revisit better characters or techniques later.
 			addFilterJSONToQuery(fieldColumn, jsonPath, pFilterStanza.Value.split(','), getFilterComparisonOperator(pFilterStanza.Operator), 'OR', pQuery);
 			break;
@@ -313,7 +326,7 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 
 		case 'FBJD':   // Filter by JSON Date (exclude time)
 		{
-			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza, pQuery.parameters?.join);
 			pQuery.addFilter('', '', '(');
 			// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
 			pQuery.addFilter(`JSON_VALID(${fieldColumn})`, 1, '=', 'AND', 'validJson');
@@ -326,7 +339,7 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 
 		case 'FSJF':   // Filter Sort JSON Field
 		{
-			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza);
+			const { fieldColumn, jsonPath } = parseJSONFieldAndPath(pFilterStanza, pQuery.parameters?.join);
 			const sortDirection = (pFilterStanza.Operator === 'DESC') ? 'Descending' : 'Ascending';
 			const sortingType = getDataType(pFilterStanza.Value);
 			// TODO: prefix 'fieldColumn' with table name to avoid ambiguity (e.g. in joins)
