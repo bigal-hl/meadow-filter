@@ -7,7 +7,7 @@ const assert = chai.assert;
 suite('Filter Stanza Parse', () =>
 {
     const parse = require('../source/Meadow-Filter').parse;
-    let queryStub = { addFilter: () => { }, setDistinct: () => { }, addSort: () => { }, parameters: { join: [] } };
+    let queryStub = { addFilter: () => { }, setDistinct: () => { }, addSort: () => { } };
     let queryMock;
 
     setup(() =>
