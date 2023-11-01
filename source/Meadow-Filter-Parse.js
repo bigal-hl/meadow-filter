@@ -181,14 +181,28 @@ const prepareQueryValues = (values) =>
  */
 const parseJSONFieldAndPath = (pFilterStanza) =>
 {
-	const splitIndex = pFilterStanza.Field.indexOf('.');
-	if (splitIndex < 1)
+	// if theres a $ in the path then use that as the delimeter for field and path
+	// this allows for fully qualified paths and raw json path selectors
+	const jsonPathIndex = pFilterStanza.Field.indexOf('$');
+
+	let fieldColumnRaw, jsonPathRaw;
+	if(jsonPathIndex !== -1)
 	{
-		const msg = `Invalid format for Field[${pFilterStanza.Field}]`;
-		throw new Error(msg);
+		fieldColumnRaw = pFilterStanza.Field.substring(0, jsonPathIndex);
+		jsonPathRaw = pFilterStanza.Field.substring(jsonPathIndex + 1);
 	}
-	const fieldColumnRaw = pFilterStanza.Field.substring(0, splitIndex);
-	const jsonPathRaw = pFilterStanza.Field.substring(splitIndex);
+	else
+	{
+		const splitIndex = pFilterStanza.Field.indexOf('.');
+		if (splitIndex < 1)
+		{
+			const msg = `Invalid format for Field[${pFilterStanza.Field}]`;
+			throw new Error(msg);
+		}
+		fieldColumnRaw = pFilterStanza.Field.substring(0, splitIndex);
+		jsonPathRaw = pFilterStanza.Field.substring(splitIndex);
+	}
+
 	let [ fieldColumn, jsonPath ] = prepareQueryValues([fieldColumnRaw, jsonPathRaw]);
 	const result =
 	{
