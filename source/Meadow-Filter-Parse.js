@@ -34,7 +34,7 @@
        * NIN - NOT IN list
  FBVOR - Filter By Value (left-side OR connected)
  FBL - Filter By List (value list, separated by commas)
-       FBL~Category~EQ~Books,Movies
+       FBL~Category~INN~Books,Movies
  FBD - Filter by Date (exclude time)
        FBD~UpdateDate~EQ~2015-10-01
  FSF - Filter Sort Field
