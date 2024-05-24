@@ -148,8 +148,8 @@ const getDataType = (encodedType) =>
 			type = 'UNSIGNED';
 			break;
 		case 'DD':
-			// base 10, 5 decimal places (should cover 99% of use cases)
-			type = 'DECIMAL(10,5)';
+			// base 19,6 decimal places (should cover 99% of use cases)
+			type = 'DECIMAL(19,6)';
 			break;
 		case 'DATE':
 			type = 'DATE';
