@@ -1,11 +1,12 @@
 {
   "name": "meadow-filter",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Filter utilities for Meadow Endpoints.",
   "main": "source/Meadow-Filter.js",
   "scripts": {
     "coverage": "nyc npm run test && nyc report --reporter=lcov",
-    "test": "./node_modules/.bin/mocha --exit -u tdd -R spec"
+    "test": "mocha --exit -u tdd -R spec",
+    "types": "npx -p typescript tsc -p . --declaration --allowJs --emitDeclarationOnly --outDir types"
   },
   "repository": {
     "type": "git",
@@ -26,6 +27,7 @@
     "fable": "^2.0.1",
     "mocha": "^9.2.2",
     "nyc": "^15.1.0",
-    "sinon": "^13.0.1"
+    "sinon": "^13.0.1",
+    "typescript": "^5.9.2"
   }
 }

@@ -1,12 +1,10 @@
 const chai = require('chai');
 const sinon = require('sinon');
-const {parse} = require("../source/Meadow-Filter");
+const { parse } = require('..');
 const expect = chai.expect;
-const assert = chai.assert;
 
 suite('Filter Stanza Parse', () =>
 {
-    const parse = require('../source/Meadow-Filter').parse;
     let queryStub = { addFilter: () => { }, setDistinct: () => { }, addSort: () => { } };
     let queryMock;
 
@@ -146,6 +144,22 @@ suite('Filter Stanza Parse', () =>
             queryMock.expects('addFilter').once().withArgs('JSON_VALID(FormData)', 1, '=', 'AND');
             //// make sure quotes are escaped to avoid command injections
             queryMock.expects('addFilter').once().withArgs('CAST(JSON_UNQUOTE(JSON_EXTRACT(FormData, \'$.IDWaffle\\\')) AND Select COUNT(*) From Document AND ((\\\'1\')) AS CHAR)', 123, '=', 'AND');
+            queryMock.expects('addFilter').once().withArgs('','',')');
+
+            // when
+            parse(filterString, queryStub);
+
+            // then
+            queryMock.verify();
+        });
+
+        test('Filter by JSON Value - escapes values', () =>
+        {
+            // given
+            const filterString = `FBJV~Document.'FormData'$."Waffle"~EQ~123`;
+            queryMock.expects('addFilter').once().withArgs('','','(');
+            queryMock.expects('addFilter').once().withArgs(`JSON_VALID(Document.\\'FormData\\')`, 1, '=', 'AND');
+            queryMock.expects('addFilter').once().withArgs(`CAST(JSON_UNQUOTE(JSON_EXTRACT(Document.\\'FormData\\', '$.\\"Waffle\\"')) AS CHAR)`, 123, '=', 'AND');
             queryMock.expects('addFilter').once().withArgs('','',')');
 
             // when

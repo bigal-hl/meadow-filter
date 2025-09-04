@@ -1,3 +1,3 @@
 module.exports = {
-	parse: require('./Meadow-Filter-Parse'),
+	parse: require('./Meadow-Filter-Parse.js'),
 };

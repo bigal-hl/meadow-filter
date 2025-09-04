@@ -78,7 +78,13 @@
           where <cast> can be in (UINT,SINT,CHAR,DD,DATE) - defaults to CHAR
 */
 
-// Get the comparison operator for use in a query stanza
+/**
+ * Get the comparison operator for use in a query stanza
+ *
+ * @param {string} pFilterOperator - the stanza operator (e.g. EQ, NE, GT)
+ *
+ * @return {string} the comparison operator (e.g. =, !=, >)
+ */
 const getFilterComparisonOperator = (pFilterOperator) =>
 {
 	let tmpOperator = '=';
@@ -134,6 +140,7 @@ const getFilterComparisonOperator = (pFilterOperator) =>
 /**
  *
  * @param {string} encodedType - "encoded" type from the filter-parse request
+ *
  * @return {string} meadow-friendly type (e.g. SQL type that one could cast to)
  */
 const getDataType = (encodedType) =>
@@ -170,14 +177,16 @@ const prepareQueryValues = (values) =>
 	return values.map((v) =>
 	{
 		// escape quotes
-		return v.replaceAll("'", "\\'").replaceAll('"', '\\"');
+		return v.replace(/'/g, `\\'`).replace(/"/g, `\\"`);
 	});
 };
 
 /**
  * @spec fieldColumn is the target database (table) column; jsonPath is the target path to use for JSON_EXTRACT
- * @param {object} pFilterStanza - a filter stanza with the properties defined in the interface
- * @returns {object} structure { fieldColumn, jsonPath }
+ *
+ * @param {Record<string, any>} pFilterStanza - a filter stanza with the properties defined in the interface
+ *
+ * @returns {{ fieldColumn: string, jsonPath: string }} structure { fieldColumn, jsonPath }
  */
 const parseJSONFieldAndPath = (pFilterStanza) =>
 {
@@ -214,13 +223,15 @@ const parseJSONFieldAndPath = (pFilterStanza) =>
 
 /**
  * @spec generates the appropriate filter(s) for looking inside a JSON field
+ *
  * @param {string} fieldColumn - the target column for the meadow entity
  * @param {string} jsonPath - the target chain (. notation) of possibly nested json keys in the value of 'fieldColumn'
  * @param {number|string|Array|object} value - the value to use in the filter for comparison
  * @param {string} comparisonOperator - the comparison operator (e.g. =, <=, NOT IN)
  * @param {string} connector - the logical connector to this query (AND/OR)
- * @param {object} pQuery - the foxhound query object
- * @return {object} pQuery
+ * @param {any} pQuery - the foxhound query object
+ *
+ * @return {any} the updated foxhound query object
  */
 const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, connector, pQuery) =>
 {
@@ -255,6 +266,12 @@ const addFilterJSONToQuery = (fieldColumn, jsonPath, value, comparisonOperator, 
 	return pQuery;
 };
 
+/**
+ * @param {Record<string, any>} pFilterStanza - a filter stanza with the properties defined in the interface
+ * @param {any} pQuery - the foxhound query object
+ *
+ * @return {boolean} success
+ */
 const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 {
 	if (!pFilterStanza.Instruction)
@@ -380,6 +397,12 @@ const addFilterStanzaToQuery = (pFilterStanza, pQuery) =>
 	return true;
 };
 
+/**
+ * @param {string} pFilterString - the filter string to parse
+ * @param {any} pQuery - the foxhound query object
+ *
+ * @return {boolean} success
+ */
 const doParseFilter = (pFilterString, pQuery) =>
 {
 	if (typeof(pFilterString) !== 'string')
@@ -394,7 +417,7 @@ const doParseFilter = (pFilterString, pQuery) =>
 		return true;
 	}
 
-	let tmpFilterStanza = { Instruction: false };
+	let tmpFilterStanza = { Instruction: null };
 
 	for (let i = 0; i < tmpFilterTerms.length; i++)
 	{
